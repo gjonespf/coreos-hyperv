@@ -116,6 +116,7 @@ Function Get-BaseConfigDrive {
 
     PROCESS {
         $vhd = Join-Path -Path $ImageDir "config2_base.vhdx"
+		Write-Verbose $vhd
 
         if (Test-Path $vhd) {
             Write-Output $vhd
@@ -192,8 +193,8 @@ Function Get-BzipCommand {
     PROCESS {
         $bzip = $null
         try {
-            Get-Command bunzip2 -ErrorAction:Stop | Out-Null
-            $bzip = "bunzip2"
+            Get-Command bzip2 -ErrorAction:Stop | Out-Null
+            $bzip = "bzip2"
         } catch {
         }
 
@@ -230,28 +231,43 @@ Function Get-CoreosImageFromSite {
         [String] $Channel,
 
         [Parameter (Mandatory=$true)]
-        [String] $Release
-    )
+        [String] $Release,
+
+        [Parameter (Mandatory=$false)]
+        [Switch] $Overwrite
+	)
 
     PROCESS {
         $tmp = "$ImageSavePath.bz2"
 
-        if (Test-Path $tmp) {
+		#Remove existing zip if overwrite
+        if ((Test-Path $tmp) -And $Overwrite) {
             Remove-Item -Force $tmp
         }
-
+        if (Test-Path $ImageSavePath)
+		{
+			if($Overwrite) {
+				Remove-Item -Force $ImageSavePath
+			} else {
+				#We're not overwriting, and we already have the correct image extracted
+				return
+			}
+		}
+		
         if ($Channel -eq "Master") {
             $uri = "http://storage.core-os.net/coreos/amd64-usr/master/coreos_production_hyperv_image.vhd.bz2"
         } else {
             $uri = "http://$($Channel.ToLower()).release.core-os.net/amd64-usr/$Release/coreos_production_hyperv_image.vhd.bz2"            
         }
 
-        try {
-            Invoke-WebRequest -Uri $uri -OutFile $tmp    
-        } catch {
-            throw "Release $Release not found on $Channel channel. $url"
-            return
-        }
+        if (!(Test-Path $tmp)) {
+			try {
+				Invoke-WebRequest -Uri $uri -OutFile $tmp    
+			} catch {
+				throw "Release $Release not found on $Channel channel. $url"
+				return
+			}
+		}
 
         Invoke-Bunzip -Target:$tmp -Destination:$ImageSavePath
 
@@ -275,7 +291,9 @@ Function Invoke-Bunzip {
     PROCESS {
         $bzip = Get-BzipCommand
         Write-Verbose "Bunzipping $Target to $Destination"
-        Write-Verbose "`"$Bzip`" -c -d -k `"$Target`" > `"$Destination`""
-        & cmd /C "`"`"$Bzip`" -c -d -k `"$Target`" > `"$Destination`"`"" | Out-Null
+		$cmdStr = "`"$Bzip`" -d -k `"$Target`""
+        Write-Verbose "`"$cmdStr`" > `"$Destination`""
+		#& cmd /C "$cmdStr" > "$Destination" | Out-Null
+		& cmd /C "$cmdStr" | Out-Null
     }
 }
