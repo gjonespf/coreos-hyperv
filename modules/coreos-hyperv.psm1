@@ -421,7 +421,7 @@ Function Invoke-CoreosClusterBuilder {
                 $NetworkSwitchNames | Select-Object -Skip 1 | foreach { Add-VMNetworkAdapter -VMName $VMName -SwitchName $_ } | Out-Null
 
                 # Copy the image to the vhd location.
-                $baseVhdLocation="$vhdLocation\$VMName.vhdx"
+                $baseVhdLocation="$vhdLocation\$VMName.vhd"
                 Copy-Item -Path:$image.ImagePath -Destination:"$baseVhdLocation"
                 Resize-VHD -Path:"$baseVhdLocation" -SizeBytes:10GB
                 Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 0 -ControllerLocation 0 -Path "$vhdLocation$VMName.vhd"
