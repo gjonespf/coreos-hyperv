@@ -422,18 +422,18 @@ Function Invoke-CoreosClusterBuilder {
 
                 # Copy the image to the vhd location.
                 Copy-Item -Path:$image.ImagePath -Destination:"$vhdLocation$VMName.vhd"
-                Resize-VHD -Path:"$vhdLocation$VMName.vhd" -SizeBytes:10GB
+                Resize-VHD -Path:"$vhdLocation\$VMName.vhd" -SizeBytes:10GB
                 Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 0 -ControllerLocation 0 -Path "$vhdLocation$VMName.vhd"
                 Remove-VMDvdDrive -VMName $VMName -ControllerNumber 1 -ControllerLocation 0 | Out-Null
 
                 # Add docker base and working drives
                 # TODO: Parameterise as part of VM config...
-                $additionalVhdLocation="$vhdLocation$VMName-docker.vhd"
+                $additionalVhdLocation="$vhdLocation\$VMName-docker.vhd"
                 $additionalVhdSize=100GB
                 New-VHD -Path $additionalVhdLocation -Dynamic -SizeBytes $additionalVhdSize
                 Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 0 -ControllerLocation 1 -Path $additionalVhdLocation
 
-                $additionalVhdLocation="$vhdLocation$VMName-work.vhd"
+                $additionalVhdLocation="$vhdLocation\$VMName-work.vhd"
                 $additionalVhdSize=100GB               
                 New-VHD -Path $additionalVhdLocation -Dynamic -SizeBytes $additionalVhdSize
                 Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 1 -ControllerLocation 1 -Path $additionalVhdLocation
