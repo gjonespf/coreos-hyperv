@@ -404,26 +404,39 @@ Function Invoke-CoreosClusterBuilder {
             Out-CoreosClusterInfo -ClusterInfo $ClusterInfo
 
             # Create the VM
+            #TODO: Parameterise options such as memory, using dynamic, and HDD setup
             Write-Verbose "Creating the VMs."
             $toCreate | foreach {
                 $VMName = $_.Name
-                $vhdLocation = "$((Get-VMHost).VirtualHardDiskPath)\$VMName.vhd"
+                $vhdLocation = "$((Get-VMHost).VirtualHardDiskPath)"#\$VMName.vhd"
 
                 # Create the VM - Windows 2012 doesn't support -Generation
                 if ((Get-WmiObject Win32_OperatingSystem).Version -ge 6.3) {
                     # Windows 6.3 and higher = 2012 R2 + 81. http://msdn.microsoft.com/en-us/library/windows/desktop/ms724832(v=vs.85).aspx
-                    $vm = New-VM -Name $VMName -MemoryStartupBytes 1024MB -NoVHD -Generation 1 -BootDevice CD -SwitchName $NetworkSwitchNames[0]
+                    $vm = New-VM -Name $VMName -MemoryStartupBytes 2048MB -NoVHD -Generation 1 -BootDevice CD -SwitchName $NetworkSwitchNames[0]
                 } else {
-                    $vm = New-VM -Name $VMName -MemoryStartupBytes 1024MB -NoVHD -BootDevice CD -SwitchName $NetworkSwitchNames[0]
+                    $vm = New-VM -Name $VMName -MemoryStartupBytes 2048MB -NoVHD -BootDevice CD -SwitchName $NetworkSwitchNames[0]
                 }
                 $vm | Set-VMMemory -DynamicMemoryEnabled:$true
                 $NetworkSwitchNames | Select-Object -Skip 1 | foreach { Add-VMNetworkAdapter -VMName $VMName -SwitchName $_ } | Out-Null
 
                 # Copy the image to the vhd location.
-                Copy-Item -Path:$image.ImagePath -Destination:$vhdLocation
-                Resize-VHD -Path:$vhdLocation -SizeBytes:10GB
-                Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 0 -ControllerLocation 0 -Path $vhdLocation
+                Copy-Item -Path:$image.ImagePath -Destination:"$vhdLocation$VMName.vhd"
+                Resize-VHD -Path:"$vhdLocation$VMName.vhd" -SizeBytes:10GB
+                Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 0 -ControllerLocation 0 -Path "$vhdLocation$VMName.vhd"
                 Remove-VMDvdDrive -VMName $VMName -ControllerNumber 1 -ControllerLocation 0 | Out-Null
+
+                # Add docker base and working drives
+                # TODO: Parameterise as part of VM config...
+                $additionalVhdLocation="$vhdLocation$VMName-docker.vhd"
+                $additionalVhdSize=100GB
+                New-VHD -Path $additionalVhdLocation -Dynamic -SizeBytes $additionalVhdSize
+                Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 0 -ControllerLocation 1 -Path $additionalVhdLocation
+
+                $additionalVhdLocation="$vhdLocation$VMName-work.vhd"
+                $additionalVhdSize=100GB               
+                New-VHD -Path $additionalVhdLocation -Dynamic -SizeBytes $additionalVhdSize
+                Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 1 -ControllerLocation 1 -Path $additionalVhdLocation
 
                 if ($_.ConfigDrive) {
                     Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 1 -ControllerLocation 0 -Path $_.ConfigDrive
