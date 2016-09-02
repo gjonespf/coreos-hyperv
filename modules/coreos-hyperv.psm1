@@ -421,19 +421,20 @@ Function Invoke-CoreosClusterBuilder {
                 $NetworkSwitchNames | Select-Object -Skip 1 | foreach { Add-VMNetworkAdapter -VMName $VMName -SwitchName $_ } | Out-Null
 
                 # Copy the image to the vhd location.
-                Copy-Item -Path:$image.ImagePath -Destination:"$vhdLocation$VMName.vhd"
-                Resize-VHD -Path:"$vhdLocation\$VMName.vhd" -SizeBytes:10GB
+                $baseVhdLocation="$vhdLocation\$VMName.vhdx"
+                Copy-Item -Path:$image.ImagePath -Destination:"$baseVhdLocation"
+                Resize-VHD -Path:"$baseVhdLocation" -SizeBytes:10GB
                 Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 0 -ControllerLocation 0 -Path "$vhdLocation$VMName.vhd"
                 Remove-VMDvdDrive -VMName $VMName -ControllerNumber 1 -ControllerLocation 0 | Out-Null
 
                 # Add docker base and working drives
                 # TODO: Parameterise as part of VM config...
-                $additionalVhdLocation="$vhdLocation\$VMName-docker.vhd"
+                $additionalVhdLocation="$vhdLocation\$VMName-docker.vhdx"
                 $additionalVhdSize=100GB
                 New-VHD -Path $additionalVhdLocation -Dynamic -SizeBytes $additionalVhdSize
                 Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 0 -ControllerLocation 1 -Path $additionalVhdLocation
 
-                $additionalVhdLocation="$vhdLocation\$VMName-work.vhd"
+                $additionalVhdLocation="$vhdLocation\$VMName-work.vhdx"
                 $additionalVhdSize=100GB               
                 New-VHD -Path $additionalVhdLocation -Dynamic -SizeBytes $additionalVhdSize
                 Add-VMHardDiskDrive -VMName $VMName -ControllerType IDE -ControllerNumber 1 -ControllerLocation 1 -Path $additionalVhdLocation
