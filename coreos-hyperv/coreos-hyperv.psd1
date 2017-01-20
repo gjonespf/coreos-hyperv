@@ -12,7 +12,7 @@
 RootModule = '.\modules\coreos-hyperv.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.3.2'
+ModuleVersion = '0.3.4'
 
 # ID used to uniquely identify this module
 GUID = 'c10047ca-3b1d-4f72-b74b-a2a5522add42'
@@ -105,7 +105,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = ''
+        ReleaseNotes = @('# coreos-hyperv Release History','','## 0.3.4','### 01/20/2017','Correct build requirements issues','Move files for build','','','## 0.3.3','### 01/20/2017','Correct build requirements issues','Move files for build','','','## 0.3.2','### 01/20/2017','Move files for build','Ad build deps','','')
 
     } # End of PSData hashtable
 
@@ -118,6 +118,12 @@ PrivateData = @{
 # DefaultCommandPrefix = ''
 
 }
+
+
+
+
+
+
 
 
 
